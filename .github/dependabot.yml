@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      frontend-tooling:
+        dependency-type: development
+# ML upgrades require a coordinated compatibility and privacy review; see SECURITY.md.

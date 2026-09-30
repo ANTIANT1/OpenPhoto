@@ -1,0 +1,99 @@
+name: Source checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    name: Windows core and browser
+    runs-on: windows-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: false
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Install core test environment
+        run: |
+          uv sync --frozen --extra desktop --extra dev
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          uv pip install tools/wheels/protobuf-4.25.9+openphoto.1-cp310-abi3-win_amd64.whl
+      - name: Check Python
+        run: |
+          .venv/Scripts/ruff check src scripts tests
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          .venv/Scripts/python scripts/run_owned.py .venv/Scripts/python -m pytest --junitxml .cache/tests.xml
+      - name: Build interface
+        run: |
+          npm.cmd --prefix frontend ci
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm.cmd --prefix frontend run build
+      - name: Browser regressions in Microsoft Edge
+        run: .venv/Scripts/python scripts/verify_editor_races.py .cache/browser
+      - name: Save synthetic test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-checks
+          retention-days: 14
+          path: |
+            .cache/tests.xml
+            .cache/browser/editor-races.json
+            .cache/browser/cleanup.json
+            .cache/browser/*.png
+
+  security:
+    name: Source and dependency security
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: false
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Stage and verify the source distribution
+        run: |
+          uv run --no-project --python 3.12 python scripts/stage_release.py --directory .cache/source
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          uv run --no-project --python 3.12 python scripts/verify_source.py .cache/source
+      - name: Scan source and Git history for secrets
+        run: |
+          uv run --no-project --python 3.12 python scripts/scan_secrets.py --source .cache/source --output .cache/secrets
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          uv run --no-project --python 3.12 python scripts/scan_secrets.py --source . --history --output .cache/history-secrets
+      - name: Audit all locked Python versions
+        run: uv run --no-project --python 3.12 python scripts/audit_dependencies.py --output .cache/python-audit
+      - name: Audit JavaScript dependencies
+        run: npm.cmd --prefix frontend audit --audit-level=low
+      - name: Save redacted security reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: security-checks
+          retention-days: 14
+          path: |
+            .cache/secrets/summary.json
+            .cache/history-secrets/summary.json
+            .cache/python-audit/summary.json
+            .cache/python-audit/pip-audit.json

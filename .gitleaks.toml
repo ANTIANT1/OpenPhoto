@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "openphoto-launch-token"
+description = "Temporary OpenPhoto launch token"
+regex = 'token=[A-Za-z0-9_\-]{24,}'

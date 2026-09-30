@@ -1,0 +1,18 @@
+{
+  "rawtherapee": {
+    "version": "5.13",
+    "archive": "rawtherapee-5.13.zip",
+    "url": "https://github.com/RawTherapee/RawTherapee/releases/download/5.13/RawTherapee_5.13_win64_x86_64_release.zip",
+    "sha256": "ba29d23f3f12097c925bdab6d80e831a84ed3a88a81ce94606e4dcc796fa87ee",
+    "license": "GPL-3.0",
+    "executable": "rawtherapee-cli.exe"
+  },
+  "exiftool": {
+    "version": "13.59",
+    "archive": "exiftool-13.59_64.zip",
+    "url": "https://sourceforge.net/projects/exiftool/files/exiftool-13.59_64.zip/download",
+    "sha256": "44b512b25af500724ba579d0a53c8fc5851628b692dd5e5d94ae4a15c2cba9ec",
+    "license": "Artistic-1.0-Perl OR GPL-1.0-or-later",
+    "executable": "exiftool.exe"
+  }
+}

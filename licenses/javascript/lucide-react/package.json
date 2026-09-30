@@ -1,0 +1,10 @@
+{
+  "name": "lucide-react",
+  "version": "0.468.0",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucide-icons/lucide.git",
+    "directory": "packages/lucide-react"
+  }
+}

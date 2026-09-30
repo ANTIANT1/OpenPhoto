@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/ANTIANT1/OpenPhoto/security/advisories/new
+    about: Do not disclose vulnerabilities or sensitive data in public issues.
+  - name: Read the roadmap and current limitations
+    url: https://github.com/ANTIANT1/OpenPhoto/blob/main/docs/ROADMAP.md
+    about: See what is implemented, what needs validation, and what is planned.

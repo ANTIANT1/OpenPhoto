@@ -1,0 +1,10 @@
+{
+  "name": "@tanstack/virtual-core",
+  "version": "3.17.9",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanStack/virtual.git",
+    "directory": "packages/virtual-core"
+  }
+}

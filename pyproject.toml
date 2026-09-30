@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openphoto"
+version = "0.2.4"
+description = "Local, reversible photo culling, development and portrait editing"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "GPL-3.0-or-later"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+  "sqlalchemy>=2.0,<3",
+  "alembic>=1.14,<2",
+  "pydantic>=2.10,<3",
+  "pillow>=11,<13",
+  "numpy==1.26.4",
+  "scipy==1.16.3",
+  "opencv-contrib-python==4.11.0.86",
+  "tifffile==2025.6.11",
+  "imagecodecs==2025.3.30",
+  "rawpy>=0.24,<1",
+  "scikit-learn>=1.6,<2",
+  "httpx>=0.28,<1",
+  "python-multipart>=0.0.20",
+  "psutil>=6,<8",
+  "psd-tools==1.19.0",
+]
+
+[project.optional-dependencies]
+desktop = ["pywebview>=6,<7", "pyinstaller>=6,<7"]
+# 0.10.21 predates the native Clearcut telemetry in current MediaPipe binary releases.
+# Keep the compatible numerical stack pinned until an audited source build replaces it.
+ml = ["torch==2.13.0", "torchvision==0.28.0", "open-clip-torch>=3,<4", "mediapipe==0.10.21", "protobuf==4.25.9+openphoto.1", "jax==0.4.35", "jaxlib==0.4.35"]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+
+[project.scripts]
+openphoto = "openphoto.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/ANTIANT1/OpenPhoto"
+Issues = "https://github.com/ANTIANT1/OpenPhoto/issues"
+Documentation = "https://github.com/ANTIANT1/OpenPhoto#readme"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/openphoto"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.uv]
+environments = ["sys_platform == 'win32'"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = [{index = "pytorch-cu126", marker = "sys_platform == 'win32'"}]
+torchvision = [{index = "pytorch-cu126", marker = "sys_platform == 'win32'"}]
+protobuf = {path = "tools/wheels/protobuf-4.25.9+openphoto.1-cp310-abi3-win_amd64.whl", marker = "sys_platform == 'win32'"}

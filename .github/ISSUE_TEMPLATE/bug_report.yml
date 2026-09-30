@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible problem with the local photo workflow.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English and Russian reports are welcome. Use the private security channel for vulnerabilities. Do not upload private photographs, catalogs, tokens, or unredacted logs.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: 0.2.4 / commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: system
+    attributes:
+      label: Environment
+      description: Windows version, CPU/GPU, RAM, source or packaged build, camera and file format.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the expected result and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Safe supporting information
+      description: Redacted error messages or a synthetic reproduction. State whether originals, edits, or export files were affected.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I checked that this report contains no private photos, access tokens, or personal paths.
+          required: true

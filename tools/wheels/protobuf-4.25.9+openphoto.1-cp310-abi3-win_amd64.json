@@ -1,0 +1,11 @@
+{
+  "version": "4.25.9+openphoto.1",
+  "upstream_url": "https://files.pythonhosted.org/packages/f3/16/42a5c7f1001783d2b5bfcecde10127f09010f78982c86ae409122ce3ece6/protobuf-4.25.9-cp310-abi3-win_amd64.whl",
+  "upstream_sha256": "3683c05154252206f7cb2d371626514b3708199d9bcf683b503dabf3a2e38e06",
+  "wheel_sha256": "53f77ea2eeeef74b72fdf2ee3e8b0ce4667286c2700f9eb48c08d4fd70c4a939",
+  "json_format_sha256": "bd626acf9f6f9873b8721ff66e8b2097ece43baac1aa0f80fcce206749217c44",
+  "fixes": [
+    "CVE-2026-0994",
+    "protobuf-issue-26432"
+  ]
+}

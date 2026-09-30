@@ -1,0 +1,18 @@
+export type Crop = { x: number; y: number; w: number; h: number };
+export type Stroke = { points: [number, number][]; radius: number };
+export type Recipe = {
+  version: number; runtime: Record<string,string>; develop: { exposure: number; temperature: number | null; tint: number; recover_highlights: boolean; denoise: number; lens_correction: boolean };
+  color: { exposure: number; contrast: number; saturation: number; warmth: number; tint: number; shadows: number; highlights: number; black_point: number; shadow_hue: number; highlight_hue: number; strength: number; protect_skin: boolean };
+  retouch: { body_strength: number; body_color_evenness: number; strength: number; color_evenness: number; protected: Stroke[]; healing: { x: number; y: number; radius: number }[]; disabled_faces: number[] };
+  crop: Crop; rotation: number; lock_crop: boolean; engine: string; working_space: string;
+};
+export type Photo = { id: string; shoot_id: string; name: string; raw: boolean; paired: boolean; width: number; height: number; group_id: string; status: string; rating: number; suggested: boolean; review: boolean; revision: number; score: number | null; learned_score: number | null; error: string | null; captured: number; metadata: Record<string, string | number> };
+export type CropOption = { crop: Crop; score: number; gain: number; safe: boolean; retained: number; auto_eligible: boolean; reason: string };
+export type Face = { box: number[]; confidence: number; eyes_closed: number; sharpness: number; eye_sharpness: (number | null)[] };
+export type Analysis = { canvas_width?: number; canvas_height?: number; spot_candidates?: {x:number;y:number;radius:number;contrast:number}[]; horizon?: {degrees: number; confidence: number; reason: string} | null; source: string; score: number; technical: number; sharpness: number; highlight_clipping: number; shadow_clipping: number; noise: number; aesthetic: number | null; faces: Face[]; composition: { score: number; confidence: number }; crops: CropOption[]; notes: string[]; style_proposal?: { variants?: {name:'soft'|'medium'|'strong';color:Recipe['color']}[]; color: Recipe['color']; reference_id: string; input_revision: number }; model_errors?: Record<string, string> };
+export type Detail = Photo & { recipe: Recipe; draft?: Recipe | null; analysis: Analysis | null; history: { revision: number; source: string; created: string }[]; manual_sections: string[] };
+export type Shoot = { id: string; name: string; count: number };
+export type Profile = { id: string; name: string; references: { id: string; name: string; roles: string[] }[] };
+export type Job = { id: string; kind: string; state: string; photo_ids: string[]; full: boolean; total: number; completed: number; created?: string; updated: string; error: string | null; result: { errors?: { item?: string; error: string }[]; error_count?: number; output_count?: number; files?: Record<string, { path: string }>; message?: string } };
+export type Status = { version: string; project: string; export_directory?: string; raw_ready: boolean; models: Record<string, boolean>; auto_crop_active: boolean; settings: Record<string, unknown>; packages: Record<string, string | null> };
+declare global { interface Window { openPhotoFlush?: () => Promise<boolean>; pywebview?: { api: { choose_folder(): Promise<string[]>; choose_photos(references?:boolean): Promise<string[]>; open_project(directory:string,create:boolean):Promise<{restarting:boolean}> } } } }

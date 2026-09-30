@@ -1,0 +1,35 @@
+{
+  "clip-vit-b32.pt": {
+    "url": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
+    "sha256": "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af",
+    "license": "MIT",
+    "bytes": 353976522
+  },
+  "aesthetic-b32.pth": {
+    "url": "https://raw.githubusercontent.com/LAION-AI/aesthetic-predictor/main/sa_0_4_vit_b_32_linear.pth",
+    "sha256": "c7b14cead230694acc7b9447974d3cad78003c72da032e402a303b6c2429e85f",
+    "license": "MIT",
+    "bytes": 3047
+  },
+  "face_landmarker.task": {
+    "url": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+    "sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+    "license": "Apache-2.0",
+    "bytes": 3758596,
+    "license_source": "https://github.com/google-ai-edge/mediapipe/blob/master/LICENSE"
+  },
+  "pose_landmarker_full.task": {
+    "url": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+    "sha256": "5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1",
+    "license": "Apache-2.0",
+    "bytes": 9398198,
+    "license_source": "https://github.com/google-ai-edge/mediapipe/blob/master/LICENSE"
+  },
+  "selfie_multiclass.tflite": {
+    "url": "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite",
+    "sha256": "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0",
+    "license": "Apache-2.0",
+    "bytes": 16371837,
+    "license_source": "https://github.com/google-ai-edge/mediapipe/blob/master/LICENSE"
+  }
+}

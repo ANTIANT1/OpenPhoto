@@ -1,0 +1,10 @@
+{
+  "name": "@tanstack/react-virtual",
+  "version": "3.14.11",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanStack/virtual.git",
+    "directory": "packages/react-virtual"
+  }
+}

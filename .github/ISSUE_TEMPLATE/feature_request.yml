@@ -1,0 +1,23 @@
+name: Feature request
+description: Explain a photographic workflow that OpenPhoto could improve.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Workflow and problem
+      description: What are you trying to accomplish, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the result a photographer should see and how it could be checked.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and constraints
+      description: Current workaround, file formats, performance needs, and offline requirements.
