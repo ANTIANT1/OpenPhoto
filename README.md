@@ -29,7 +29,7 @@ Originals stay in place. Edits have a history, manual changes take priority, and
 
 Automatic results need a photographer's review. Automatic crop application is off by default. PSD files can be used as flattened RGB references, not edited as layered documents. See [limitations](LIMITATIONS.md) and [validation](docs/VALIDATION.md).
 
-A public Windows installer is pending clean-machine acceptance and completion of the bundled dependency redistribution checklist. Build from source below; installer progress is tracked in the [roadmap](docs/ROADMAP.md). Releases will be published through [GitHub Releases](https://github.com/ANTIANT1/OpenPhoto/releases).
+A public Windows installer is pending clean-machine acceptance and completion of the bundled dependency redistribution checklist. Build from source below or download a source preview from [GitHub Releases](https://github.com/ANTIANT1/OpenPhoto/releases). Installer progress is tracked in the [roadmap](docs/ROADMAP.md).
 
 ## Getting started
 

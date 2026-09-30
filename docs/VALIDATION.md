@@ -2,6 +2,22 @@
 
 OpenPhoto separates source correctness, binary installation, and photographic quality. A passed unit or browser test does not validate all three.
 
+## First public source checks
+
+The [first GitHub run](https://github.com/ANTIANT1/OpenPhoto/actions/runs/36783826858) passed on commit `73962a5` using a fresh hosted Windows runner:
+
+| Check | Result |
+|---|---|
+| Python core suite and Ruff | 112 passed, one PyTorch-specific skip; no lint errors |
+| React production build | Passed |
+| Browser regressions in Microsoft Edge | 13 scenarios passed, no JavaScript errors |
+| Source inventory and manifest | Passed |
+| Source and complete Git history secret scans | Zero findings |
+| Locked Python dependency audit | 93 versions checked; no unexpected findings; local protobuf backport verified |
+| JavaScript dependency audit | Zero findings |
+
+The core job deliberately does not install ML weights or test AI output quality. The protobuf advisory exception is tied to the reviewed wheel and patch hashes; see [dependency review](DEPENDENCY-REVIEW.md). Use the [current Actions results](https://github.com/ANTIANT1/OpenPhoto/actions/workflows/check.yml) for later commits.
+
 ## Baseline before public repository preparation
 
 On 30 September 2026, the local 0.2.4 snapshot passed:

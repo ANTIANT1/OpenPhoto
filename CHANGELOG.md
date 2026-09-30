@@ -2,12 +2,14 @@
 
 ## Unreleased
 
+No changes yet.
+
+## 0.2.4 — source preview (1 October 2026)
+
 - Prepare the public repository: English documentation, Russian quick start, contributor guidance, private vulnerability reporting, and a staged roadmap.
 - Make browser dependencies and the secret scanner reproducible; extend source CI with browser regressions, dependency auditing, and source archive checks.
 - Consolidate public documentation into the repository root and `docs/`.
-
-## 0.2.4 — source preview
-
+- Verify the first public commit on a fresh GitHub Windows runner and update pinned CI actions for Node.js 24.
 - Add a resumable automatic shoot workflow: analysis and culling, reference color, gentle retouching, previews, and optional JPEG export.
 - Preserve manual sections and unsaved drafts; retry failed stages without duplicating completed work.
 - Resize crops from all four edges and corners, move the crop, zoom with Ctrl+wheel, and fit the image to the window.

@@ -8,7 +8,7 @@ The first public milestone is a useful, reviewable Windows source preview. Dates
 - [x] Preserve original files, recipe history, drafts, and resumable jobs.
 - [x] Prepare source under GPL-3.0-or-later with locked dependencies and model hashes.
 - [x] Document setup, architecture, limitations, contribution rules, and security reporting.
-- [ ] Confirm the published commit passes GitHub source checks.
+- [x] Confirm the published commit passes GitHub source checks ([first public run](https://github.com/ANTIANT1/OpenPhoto/actions/runs/36783826858)).
 
 ## Windows preview
 
