@@ -10,6 +10,7 @@ export function usePhotoEditor() {
   const editorRef = useRef<Session | null>(null);
   const serial = useRef(0);
   const queue = useRef<Promise<void>>(Promise.resolve());
+  const writes = useRef(0);
   const confirmed = useRef(new Map<string, {revision: number; recipe: Recipe}>());
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
   const publish = useCallback((value: Session | null) => {
@@ -29,6 +30,18 @@ export function usePhotoEditor() {
   const updateDetail = useCallback((key: number, update: (detail: Detail) => Detail) => {
     const current = editorRef.current;
     if (current?.key === key) publish({...current, detail: update(current.detail)});
+  }, [publish]);
+  const syncRemote = useCallback((key: number, revision: number, detail: Detail) => {
+    const current = editorRef.current;
+    if (!current || current.key !== key || current.detail.id !== detail.id ||
+        current.detail.revision !== revision || detail.revision < revision || writes.current) return;
+    const clean = JSON.stringify(current.draft) === JSON.stringify(current.detail.recipe);
+    if (clean && detail.revision > revision) {
+      confirmed.current.set(detail.id, {revision:detail.revision, recipe:detail.recipe});
+      publish({...current, detail, draft:structuredClone(detail.recipe)});
+    } else {
+      publish({...current, detail:{...current.detail, analysis:detail.analysis, history:detail.history}});
+    }
   }, [publish]);
   const saveSnapshot = useCallback((explicit?: Recipe, source = 'manual') => {
     const current = editorRef.current;
@@ -60,7 +73,8 @@ export function usePhotoEditor() {
         throw error;
       }
     };
-    const pending = queue.current.then(save, save);
+    writes.current++;
+    const pending = queue.current.then(save, save).finally(() => { writes.current--; });
     queue.current = pending;
     return pending;
   }, [setDraft, updateDetail]);
@@ -96,10 +110,11 @@ export function usePhotoEditor() {
         throw error;
       }
     };
-    const pending = queue.current.then(replace, replace);
+    writes.current++;
+    const pending = queue.current.then(replace, replace).finally(() => { writes.current--; });
     queue.current = pending;
     return pending;
   }, [persistDraft, publish]);
   return {detail: session?.detail || null, draft: session?.draft || null,
-    editorRef, activate, clear, setDraft, updateDetail, persistDraft, replaceRecipe, saveState, setSaveState};
+    editorRef, activate, clear, setDraft, updateDetail, syncRemote, persistDraft, replaceRecipe, saveState, setSaveState};
 }

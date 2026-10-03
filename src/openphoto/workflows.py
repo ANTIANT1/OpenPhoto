@@ -151,13 +151,20 @@ def run_workflow(pipeline, job_id, payload):
         return
     _, result = state()
     errors = result.get('errors', [])
+    with catalog.session() as s:
+        analyses = [loads(row.data, {}) for row in s.query(AnalysisResult).filter(AnalysisResult.photo_id.in_(selected))]
+        warning_count = sum(bool(data.get('model_errors')) or
+                            any(not data.get('models', {}).get(name) for name in ('clip', 'aesthetic', 'face', 'pose', 'skin'))
+                            for data in analyses)
     export_id = None
     if not errors and selected and payload.get('export_directory'):
         export_id = enqueue(catalog, 'export', {'photo_ids':selected,'directory':payload['export_directory'],
                             'format':'jpeg','profile':'srgb'}, 40, identifier=job_id+'-export')
     message('Есть ошибки. Готовые кадры сохранены; можно повторить неудачные этапы.' if errors else
             'Кадры готовы к проверке.' + (' JPEG-экспорт добавлен в очередь.' if export_id else ''),
-            prepared_count=len(selected)-sum(r.get('item','').startswith('process:') for r in errors), export_job_id=export_id, photo_ids=selected)
+            prepared_count=len(selected)-sum(r.get('item','').startswith('process:') for r in errors),
+            selected_count=len(selected), skipped_count=len(identifiers)-len(selected), warning_count=warning_count,
+            export_job_id=export_id, photo_ids=selected)
     with catalog.session() as s:
         job = s.get(ProcessingJob, job_id)
         if job.state in {'paused', 'cancelled'}:

@@ -23,6 +23,10 @@ Completion means a new user can install and complete a shoot workflow without re
 
 ## Stable photo workflow
 
+- [x] Explain first-run import, removal, restoration, and photo navigation inside the application.
+- [x] Make shoot removal and re-import restoration reversible while preserving editing identity.
+- [x] Add mouse/keyboard pan and zoom, numeric adjustments, parameter resets, and a preview histogram.
+- [x] Show automatic-processing stages, results, and model limitations; refresh finished previews without replacing manual drafts.
 - [ ] Evaluate selection, skin masks, reference color, and crop proposals on multiple independent shoots.
 - [ ] Measure keeper recall, crop acceptance, and working time against a manual baseline.
 - [ ] Test 300 and then 1000 full-resolution RAW files, recording memory, disk use, pauses, and crash recovery.
@@ -42,6 +46,10 @@ Repository documentation is English; translating documentation does not translat
 
 ## Later candidates
 
-Keyboard accessibility, a lighter CPU package, broader camera compatibility, and incremental separation of large API/pipeline modules. Standalone composition analysis needs further work. Cloud services, social-board imports, and other operating systems are outside the first-release scope.
+The next manual-editing candidates are RGB/luma curves, HSL color ranges, and masked adjustment layers. Each needs reproducible recipe versioning, before/after comparison, and export tests before being presented as supported. Current controls are a basic editor, not feature parity with Photoshop or Capture One.
+
+Pinterest board import remains a separate candidate: explicitly selected board, authorized image access, local reference review, and one profile per visual direction. First validate color matching with local references; importing a board must not be marketed as training a generative model. There is no board connector today.
+
+Other candidates include keyboard accessibility, a lighter CPU package, broader camera compatibility, and incremental separation of large API/pipeline modules. Standalone composition analysis needs further work. Cloud services and other operating systems are outside the first-release scope.
 
 Propose a use case through [Issues](https://github.com/ANTIANT1/OpenPhoto/issues/new/choose). Scope and priority are maintained by [@ANTIANT1](https://github.com/ANTIANT1).

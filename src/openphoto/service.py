@@ -412,6 +412,8 @@ class Pipeline:
             result = loads(job.result, {})
             shoot_id = result.get("shoot_id")
             result.setdefault("duplicates", 0)
+            result.setdefault("restored", 0)
+            result.setdefault("imported", 0)
             result.setdefault("errors", []).extend(e for e in errors if e not in result.get("errors", []))
             job.result = dumps(result)
             job.total = len(files)
@@ -481,7 +483,27 @@ class Pipeline:
                                 item_error = self.prepare_preview(existing, path, jpeg)
                         job = s.get(ProcessingJob, job_id)
                         result = loads(job.result)
-                        result["duplicates"] += 1
+                        if existing.status == "removed":
+                            from .catalog_actions import restore_photo
+
+                            # An explicit re-import restores the card, its ratings and recipes.
+                            # Bind it to the selected file, including a moved copy of the original.
+                            root = s.query(Root).filter_by(path=str(root_path)).first()
+                            if root is None:
+                                root = Root(path=str(root_path))
+                                s.add(root)
+                                s.flush()
+                            existing.root_id = root.id
+                            existing.relative_path = str(path.relative_to(root_path))
+                            existing.jpeg_path = str(jpeg.relative_to(root_path)) if jpeg else None
+                            s.add(UserDecision(operation_id=job_id, photo_id=existing.id, action="restore_removed",
+                                               previous=dumps({"status": "removed", "rating": existing.rating})))
+                            restore_photo(s, existing)
+                            result["restored"] += 1
+                        else:
+                            result["duplicates"] += 1
+                        result["message"] = (f'Добавлено: {result["imported"]}. Восстановлено из удалённых: '
+                                             f'{result["restored"]}. Уже в каталоге: {result["duplicates"]}.')
                         job.result = dumps(result)
                     else:
                         if not shoot_id or s.get(Shoot, shoot_id) is None:
@@ -511,6 +533,12 @@ class Pipeline:
                         )
                         s.add(photo)
                         s.flush()
+                        job = s.get(ProcessingJob, job_id)
+                        result = loads(job.result)
+                        result["imported"] += 1
+                        result["message"] = (f'Добавлено: {result["imported"]}. Восстановлено из удалённых: '
+                                             f'{result["restored"]}. Уже в каталоге: {result["duplicates"]}.')
+                        job.result = dumps(result)
                         item_error = self.prepare_preview(photo, path, jpeg)
                         s.add(
                             RecipeRevision(

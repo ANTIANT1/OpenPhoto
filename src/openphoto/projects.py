@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .database import PhotoAsset, ProcessingJob, Shoot, StyleProfile, loads
+from .database import ProcessingJob, Shoot, StyleProfile, loads
 from .locking import ProjectLock
 
 
@@ -160,17 +160,6 @@ def register_project_routes(app, catalog):
         with catalog.session() as session:
             get(session, Shoot, identifier).name = body.name
         return {"updated": True}
-
-    @app.delete("/api/shoots/{identifier}")
-    def delete_empty_shoot(identifier: str):
-        with catalog.session() as session:
-            row = get(session, Shoot, identifier)
-            if session.query(PhotoAsset).filter_by(shoot_id=identifier).first():
-                raise HTTPException(409, "Удалить можно только пустую съёмку")
-            if session.query(ProcessingJob).filter(ProcessingJob.kind == "import", ProcessingJob.state.in_(["queued", "running", "paused"])).first():
-                raise HTTPException(409, "Сначала завершите или отмените импорт")
-            session.delete(row)
-        return {"deleted": True}
 
     @app.patch("/api/profiles/{identifier}")
     def rename_profile(identifier: str, body: NameRequest):

@@ -16,10 +16,13 @@ def public_job(job, compact=False):
     payload, result = loads(job.payload, {}), loads(job.result, {})
     if compact:
         errors = result.get("errors", [])
-        result = {"message": result.get("message"), "errors": errors[:3], "error_count": len(errors),
+        result = {**{k: result[k] for k in ("prepared_count", "selected_count", "skipped_count", "warning_count",
+                                           "export_job_id", "restored", "imported", "duplicates") if k in result},
+                  "message": result.get("message"), "errors": errors[:3], "error_count": len(errors),
                   "output_count": sum(r.get("state") == "committed" for r in result.get("files", {}).values())}
     return {"id": job.id, "kind": job.kind, "state": job.state, "total": job.total,
             "completed": job.completed, "photo_ids": payload.get("photo_ids", []),
+            "shoot_id": payload.get("shoot_id"),
             "full": payload.get("full", False), "result": result, "error": job.error,
             "created": job.created, "updated": job.updated}
 

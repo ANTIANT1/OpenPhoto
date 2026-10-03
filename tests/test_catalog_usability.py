@@ -21,8 +21,6 @@ def test_remove_restore_and_undo_preserve_originals_recipes_and_ratings(workspac
     assert client.post('/api/decisions', json={'photo_ids':ids, 'action':'keep'}).status_code == 409
     # Removing again is idempotent and must not replace the original restore state.
     client.post('/api/decisions', json={'photo_ids':ids, 'action':'remove'})
-    import_all(client, pipeline, source)
-    assert client.get('/api/photos?filter=removed').json()['total'] == 2
     recompute_selection(pipeline.catalog)
     export = client.post('/api/export', json={'photo_ids':ids,'directory':str(source.parent/'output')})
     assert export.status_code == 200

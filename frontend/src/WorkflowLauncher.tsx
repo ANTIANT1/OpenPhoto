@@ -5,8 +5,8 @@ import { post } from './api';
 import type { Job, Profile, Status } from './types';
 
 type Options={profile_id:string|null;strength:number;selection:'all'|'suggested';retouch_strength:number};
-export function WorkflowLauncher({ids,shootId,count,profiles,status,jobs,manual,progress,error,onModal}:{
-  ids:string[];shootId:string;count:number;profiles:Profile[];status:Status|null;jobs:Job[];
+export function WorkflowLauncher({ids,availableIds,shootId,count,profiles,status,jobs,manual,progress,error,onModal}:{
+  ids:string[];availableIds:string[];shootId:string;count:number;profiles:Profile[];status:Status|null;jobs:Job[];
   manual:()=>void;progress:()=>void;error:(text:string)=>void;onModal:(open:boolean)=>void;
 }) {
   const [options,setOptions]=useState<Options>({profile_id:null,strength:.6,selection:'suggested',retouch_strength:.15});
@@ -23,9 +23,11 @@ export function WorkflowLauncher({ids,shootId,count,profiles,status,jobs,manual,
     }
   },[status,configured]);
   const showSettings=(open:boolean)=>{setSettings(open);onModal(open);};
-  const current=jobs.find(j=>j.kind==='workflow' && ['queued','running','paused'].includes(j.state));
+  const scope=new Set(ids.length ? ids : availableIds);
+  const relevant=jobs.filter(j=>j.kind==='workflow' && (j.photo_ids.some(id=>scope.has(id)) || (!ids.length && !!shootId && j.shoot_id===shootId)));
+  const current=relevant.find(j=>['queued','running','paused'].includes(j.state));
   const importing=jobs.some(j=>j.kind==='import' && ['queued','running','paused'].includes(j.state));
-  const latest=jobs.find(j=>j.kind==='workflow');
+  const latest=current || relevant[0];
   const start=async()=>{
     setStarting(true);
     try {
@@ -36,20 +38,21 @@ export function WorkflowLauncher({ids,shootId,count,profiles,status,jobs,manual,
   };
   return <>
     <div className="workflow-launcher">
-      <div className="workflow-card primary"><strong>Автоматически</strong><span>Отбор → цвет{options.profile_id ? ' по референсу' : ''} → естественная ретушь → готовые превью{exportFiles ? ' и JPEG' : ' для проверки'}.</span>
+      <div className="workflow-card primary"><strong>Автоматически</strong><span>Анализ и отбор → {options.profile_id ? 'цвет по референсу' : 'исходный цвет'} → мягкая ретушь найденной кожи → превью{exportFiles ? ' и JPEG' : ' для проверки'}.</span>
         <button className="button primary" disabled={!count || starting || !!current || importing} onClick={()=>void start()}>{starting ? <Loader2 size={16} className="spin"/> : <Sparkles size={16}/>} Обработать съёмку</button>
         {importing && <span>Дождитесь завершения импорта всей съёмки.</span>}
-        <button className="text-button" onClick={()=>showSettings(true)}><Settings2 size={14}/> Настроить: {profiles.find(p=>p.id===options.profile_id)?.name || 'Естественный цвет'} · {count} кадров</button>
+        <button className="text-button" onClick={()=>showSettings(true)}><Settings2 size={14}/> Настроить: {profiles.find(p=>p.id===options.profile_id)?.name || 'Исходный цвет'} · {count} кадров</button>
       </div>
       <div className="workflow-card"><strong>Вручную</strong><span>Открывайте кадры, меняйте цвет и кадрирование. Выделение Ctrl+A, удаление Delete, масштаб Ctrl+колесо.</span>
         <button className="button" disabled={!count} onClick={manual}><SlidersHorizontal size={16}/> Обрабатывать вручную</button>
         <span>После проверки нажмите «Экспорт» вверху.</span>
       </div>
     </div>
-    {latest && <div className="workflow-status"><span>{current ? `${current.state==='paused' ? 'Пауза' : 'Обработка'} · ${current.completed}/${current.total}` : 'Последняя обработка'} — {latest.result.message || 'Подготовка съёмки'}</span>{!current && latest.state==='completed' && <button className="button small" onClick={manual}>Проверить кадры</button>}<button className="text-button" onClick={progress}>Прогресс и результаты</button></div>}
+    {latest && <div className="workflow-status" role="status"><span>{current ? `${current.state==='paused' ? 'Пауза' : current.state==='queued' ? 'В очереди' : 'Обработка'} · ${current.completed}/${current.total || '…'}` : latest.state==='failed' ? 'Ошибка обработки' : latest.state==='cancelled' ? 'Обработка отменена' : 'Последняя обработка'} — {latest.error || latest.result.message || 'Подготовка съёмки'}{latest.result.prepared_count !== undefined && ` Готовых превью: ${latest.result.prepared_count}.`}{!!latest.result.warning_count && ` Кадров с ограничениями ИИ: ${latest.result.warning_count}. Откройте «Анализ» для подробностей.`}</span>{!current && ['completed','completed_with_errors'].includes(latest.state) && <button className="button small" onClick={manual}>Проверить кадры</button>}<button className="text-button" onClick={progress}>Прогресс и результаты</button></div>}
     {settings && <Modal title="Автоматическая обработка" close={()=>showSettings(false)}>
       <p className="modal-description">Настройте один раз и запускайте съёмку кнопкой «Обработать съёмку». Ручные правки сохранятся. Спорные кадры останутся для проверки.</p>
-      <label className="form-label">Цвет<select className="field" value={options.profile_id || ''} onChange={e=>setOptions({...options,profile_id:e.target.value || null})}><option value="">Естественный цвет</option>{profiles.map(p=><option key={p.id} value={p.id} disabled={!p.references.length}>{p.name}</option>)}</select></label>
+      <label className="form-label">Цвет<select className="field" value={options.profile_id || ''} onChange={e=>setOptions({...options,profile_id:e.target.value || null})}><option value="">Исходный цвет (без цветового стиля)</option>{profiles.map(p=><option key={p.id} value={p.id} disabled={!p.references.length}>{p.name}</option>)}</select></label>
+      {!options.profile_id && <p className="control-note">Без референса цвет и экспозиция сохраняются. На кадрах без кожи мягкая ретушь может не давать видимых изменений.</p>}
       {options.profile_id && <label className="form-label">Сила стиля<select className="field" value={options.strength} onChange={e=>setOptions({...options,strength:Number(e.target.value)})}><option value={.35}>Мягкая</option><option value={.6}>Средняя</option><option value={1}>Выраженная</option></select></label>}
       <label className="form-label">Какие кадры обрабатывать<select className="field" value={options.selection} onChange={e=>setOptions({...options,selection:e.target.value as Options['selection']})}><option value="suggested">Предложенный отбор и спорные кадры</option><option value="all">Все неотклонённые кадры</option></select></label>
       <label className="check-label"><input type="checkbox" checked={options.retouch_strength>0} onChange={e=>setOptions({...options,retouch_strength:e.target.checked ? .15 : 0})}/> Мягкая ретушь кожи</label>
