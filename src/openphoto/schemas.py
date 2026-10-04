@@ -166,6 +166,7 @@ class ReferenceRolesRequest(StrictModel):
 
 
 class SettingsPatch(StrictModel):
+    onboarding_completed: bool | None = None
     models_directory: str | None = None
     cpu_threads: int | None = Field(None, ge=1, le=4)
     worker_idle_seconds: int | None = Field(None, ge=10, le=120)

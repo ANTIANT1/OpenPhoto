@@ -25,6 +25,9 @@ def test_workflow_one_request_renders_exports_and_replays_without_duplicates(wor
         assert job.state == 'completed', job.result
         assert job.completed == job.total == 4
         export_id = loads(job.result)['export_job_id']
+        assert loads(job.result)['prepared_count'] == 2
+        assert loads(job.result)['selected_count'] == 2
+        assert loads(job.result)['skipped_count'] == 0
         revisions = {p.id:p.revision for p in s.query(PhotoAsset)}
     pipeline.run(export_id)
     outputs = list((project/'outputs').glob('*.jpg'))
@@ -34,6 +37,35 @@ def test_workflow_one_request_renders_exports_and_replays_without_duplicates(wor
         assert {p.id:p.revision for p in s.query(PhotoAsset)} == revisions
         assert s.query(ProcessingJob).filter_by(kind='export').count() == 1
     assert {p.name:fingerprint(p) for p in source.iterdir()} == hashes
+
+
+def test_workflow_reference_changes_actual_preview_and_reports_model_limits(workspace):
+    import numpy as np
+    from PIL import Image
+
+    client, pipeline, source, project = workspace
+    photo = import_all(client, pipeline, source)[0]
+    identifier = photo['id']
+    pipeline.render_photo(identifier)
+    original = np.asarray(Image.open(project/'cache'/f'render-{identifier}-0.jpg')).astype(float)
+    refs = project/'test-references'
+    refs.mkdir()
+    y, x = np.mgrid[0:240, 0:320]
+    pixels = np.stack([100+x//3, 50+y//3, 20+x//8],axis=-1).astype(np.uint8)
+    Image.fromarray(pixels).save(refs/'warm.jpg')
+    response = client.post('/api/profiles', json={'name':'Warm','paths':[str(refs)]})
+    pipeline.run(response.json()['job_id'])
+    profile = client.get('/api/profiles').json()[0]
+    job_id = client.post('/api/workflows', json={'photo_ids':[identifier], 'selection':'all', 'profile_id':profile['id']}).json()['job_id']
+    pipeline.run(job_id)
+    detail = client.get('/api/photos/'+identifier).json()
+    job = client.get('/api/jobs/'+job_id).json()
+    assert job['state'] == 'completed', job
+    assert job['result']['prepared_count'] == 1
+    assert job['result']['warning_count'] == 1  # This fixture intentionally has no ML models.
+    rendered = np.asarray(Image.open(project/'cache'/f'render-{identifier}-{detail["revision"]}.jpg')).astype(float)
+    assert np.abs(rendered-original).mean() > 1, 'The workflow must change rendered pixels, not only enqueue work'
+    assert any(h['source'] == 'workflow:'+job_id for h in detail['history'])
 
 
 def test_workflow_retry_only_failed_render_and_keep_committed_recipe(workspace, monkeypatch):

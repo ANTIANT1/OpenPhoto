@@ -2,6 +2,12 @@
 
 OpenPhoto separates source correctness, binary installation, and photographic quality. A passed unit or browser test does not validate all three.
 
+## 0.2.5 workflow regression checks (3 October 2026)
+
+Local Windows checks passed: 117 Python tests with one PyTorch-specific skip, Ruff, the React production build, and 17 Edge browser scenarios with no JavaScript errors. New checks cover reversible shoot removal, restoration through re-import (including a moved source), retained ratings and recipe history, persisted onboarding, numeric entry, parameter resets, histogram rendering, photo pan/zoom, crop safety while panning, and background workflow completion with an open editor.
+
+A synthetic end-to-end color-reference workflow verifies changed rendered pixels, a new recipe revision, prepared-preview counts, and unavailable-model warnings. Existing workflow tests also verify exports, original-file hashes, retry, pause/resume, and preservation of manual edits. Browser tests use controlled API responses and synthetic photos. Test-owned processes exited and their HTTP port closed. These checks do not measure portrait quality or constitute clean-Windows installer acceptance.
+
 ## First public source checks
 
 The [first GitHub run](https://github.com/ANTIANT1/OpenPhoto/actions/runs/36783826858) passed on commit `73962a5` using a fresh hosted Windows runner:

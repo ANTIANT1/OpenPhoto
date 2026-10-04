@@ -164,7 +164,8 @@ def test_library_management_preserves_photos_and_references(workspace):
     photos = import_all(client, pipeline, source)
     shoot = photos[0]["shoot_id"]
     assert client.patch(f"/api/shoots/{shoot}", json={"name": "Новое имя"}).status_code == 200
-    assert client.delete(f"/api/shoots/{shoot}").status_code == 409
+    assert client.delete(f"/api/shoots/{shoot}").status_code == 200
+    assert client.get('/api/photos?filter=removed').json()['total'] == len(photos)
     with pipeline.catalog.session() as s:
         s.add(Shoot(id="empty", name="empty"))
         s.add(StyleProfile(id="profile", name="style", data=dumps({"references": []})))

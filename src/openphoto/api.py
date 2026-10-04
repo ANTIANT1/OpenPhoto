@@ -47,6 +47,7 @@ from .schemas import (
     SettingsPatch,
 )
 from .service import cached_render, enqueue, public_photo
+from .catalog_actions import register_catalog_actions, restore_photo, reveal_shoot
 
 
 def resource_root():
@@ -210,9 +211,13 @@ def create_app(directory: str | Path, token: str | None = None, start_worker=Tru
                     "name": shoot.name,
                     "created": shoot.created,
                     "count": s.query(PhotoAsset).filter_by(shoot_id=shoot.id).filter(PhotoAsset.status != "removed").count(),
+                    "removed_count": s.query(PhotoAsset).filter_by(shoot_id=shoot.id, status="removed").count(),
                 }
                 for shoot in s.query(Shoot).order_by(Shoot.created.desc())
+                if not loads(shoot.settings, {}).get("archived_at")
             ]
+
+    register_catalog_actions(app, catalog)
 
     @app.get("/api/photos")
     def photos(
@@ -609,9 +614,7 @@ def create_app(directory: str | Path, token: str | None = None, start_worker=Tru
                 elif body.action == "restore_removed":
                     if photo.status != "removed":
                         continue
-                    removal = s.query(UserDecision).filter_by(photo_id=identifier, action="remove", undone=False).order_by(UserDecision.created.desc(), UserDecision.id.desc()).first()
-                    previous = loads(removal.previous, {}) if removal else {}
-                    photo.status = previous.get("status", "unreviewed")
+                    restore_photo(s, photo)
                 elif photo.status == "removed":
                     raise HTTPException(409, "Сначала верните кадр из удалённых")
                 elif body.action in {"keep", "reject", "clear"}:
@@ -660,6 +663,8 @@ def create_app(directory: str | Path, token: str | None = None, start_worker=Tru
                 photo = get_photo(s, item.photo_id)
                 old = loads(item.previous, {})
                 photo.status, photo.rating = old.get("status", photo.status), old.get("rating", photo.rating)
+                if photo.status != "removed":
+                    reveal_shoot(s, photo.shoot_id)
                 item.undone = True
                 ids.append(photo.id)
             if any(item.action in {"remove", "restore_removed"} for item in rows):

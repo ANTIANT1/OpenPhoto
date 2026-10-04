@@ -24,16 +24,35 @@ const deferred = () => { let resolve; const promise = new Promise(r => resolve =
         fixture.details = Object.fromEntries(fixture.photos.map(p => [p.id,{...structuredClone(detail),...p}]));
       }
       const [a,b,c] = fixture.ids;
+      fixture.jobs=[]; fixture.archived=false; fixture.settings={onboarding_completed:true};
       const context = await browser.newContext({viewport:{width:1440,height:960}});
+      await context.addInitScript(()=>{
+        window.EventSource=class extends EventTarget {
+          constructor(){super();window.__jobs=this;}
+          close(){}
+        };
+      });
       const page = await context.newPage();
       page.on('pageerror', e => report.errors.push(e.message));
       await page.route('**/api/**', async route => {
         const request = route.request(), url = new URL(request.url());
         const reply = (value,status=200) => route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
         if (url.pathname === '/api/events') return route.fulfill({contentType:'text/event-stream',body:'event: jobs\ndata: []\n\n'});
-        if (url.pathname === '/api/jobs') return reply([]);
-        if (url.pathname === '/api/workflows') { workflows.push(request.postDataJSON()); return reply({job_id:'workflow-fixture',count:fixture.photos.length}); }
-        if (url.pathname === '/api/shoots') return reply([{id:fixture.photos[0].shoot_id,name:'Browser fixture',count:fixture.photos.length}]);
+        if (url.pathname === '/api/status') return reply({version:'test',settings:fixture.settings,models:{},packages:{},project:folder,raw_ready:false,auto_crop_active:false});
+        if (url.pathname === '/api/settings') {Object.assign(fixture.settings,request.postDataJSON());return reply({updated:true});}
+        if (url.pathname === '/api/jobs') return reply(fixture.jobs);
+        if (url.pathname === '/api/jobs/history') return reply({jobs:[],next_cursor:null,total:0});
+        if (url.pathname === '/api/workflows') {
+          workflows.push(request.postDataJSON());
+          fixture.jobs=[{id:'workflow-fixture',kind:'workflow',state:'queued',photo_ids:fixture.ids,total:0,completed:0,updated:'2026-10-03T12:00:00',result:{}}];
+          return reply({job_id:'workflow-fixture',count:fixture.photos.length});
+        }
+        if (url.pathname === '/api/shoots') return reply(fixture.archived ? [] : [{id:fixture.photos[0].shoot_id,name:'Browser fixture',count:fixture.photos.filter(p=>p.status!=='removed').length}]);
+        if (url.pathname.startsWith('/api/shoots/') && request.method()==='DELETE') {
+          fixture.archived=true;
+          fixture.photos.forEach(p=>{p.status='removed';fixture.details[p.id].status='removed';});
+          return reply({removed:fixture.photos.length});
+        }
         if (url.pathname === '/api/photos') {
           const offset=Number(url.searchParams.get('offset') || 0), limit=Number(url.searchParams.get('limit') || 250);
           pages.push(offset);
@@ -48,7 +67,7 @@ const deferred = () => { let resolve; const promise = new Promise(r => resolve =
           for(const id of body.photo_ids) {
             const photo=fixture.photos.find(p=>p.id===id);
             if(body.action==='remove') { photo.previousStatus=photo.status; photo.status='removed'; }
-            if(body.action==='restore_removed') photo.status=photo.previousStatus || 'unreviewed';
+            if(body.action==='restore_removed') {photo.status=photo.previousStatus || 'unreviewed';fixture.archived=false;}
             if(['keep','reject'].includes(body.action)) photo.status=body.action;
             fixture.details[id].status=photo.status;
           }
@@ -101,7 +120,8 @@ const deferred = () => { let resolve; const promise = new Promise(r => resolve =
       const next = () => page.getByRole('button',{name:'Следующий кадр',exact:true}).click();
       const gate = name => (gates[name] = {started:deferred(), release:deferred()});
       const rendered = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      return {context,page,fixture,saves,batches,gates,pages,decisions,imageRequests,workflows,a,b,c,open,current,slider,next,gate,rendered};
+      const emitJobs=async jobs=>{fixture.jobs=jobs;await page.evaluate(jobs=>window.__jobs.dispatchEvent(new MessageEvent('jobs',{data:JSON.stringify(jobs)})),jobs);await rendered();};
+      return {context,page,fixture,saves,batches,gates,pages,decisions,imageRequests,workflows,a,b,c,open,current,slider,next,gate,rendered,emitJobs};
     }
     {
       const t = await setup(), gate = t.gate('decision');
@@ -250,7 +270,7 @@ const deferred = () => { let resolve; const promise = new Promise(r => resolve =
       await t.page.waitForFunction(()=>document.querySelector('.count-pill')?.textContent==='0');
       assert.equal(t.decisions[0].action,'remove');
       assert.equal(new Set(t.decisions[0].photo_ids).size,1007);
-      await t.page.getByRole('button',{name:'Удалённые',exact:true}).click();
+      await t.page.locator('.sidebar').getByRole('button',{name:'Удалённые',exact:true}).click();
       await t.page.waitForFunction(()=>document.querySelector('.count-pill')?.textContent==='1007');
       await t.page.getByRole('button',{name:'Выделить все',exact:true}).click();
       await t.page.getByRole('button',{name:'Вернуть в каталог',exact:true}).click();
@@ -270,7 +290,7 @@ const deferred = () => { let resolve; const promise = new Promise(r => resolve =
       const t=await setup(); await t.open(t.a);
       await t.page.waitForFunction(()=>new URL(document.querySelector('.editor-image').src).searchParams.get('variant')==='render');
       assert(!t.imageRequests.some(r=>r.variant==='full' || r.variant==='fullbase'));
-      await t.page.getByRole('button',{name:'Масштаб 1:1',exact:true}).click();
+      await t.page.getByRole('button',{name:'Масштаб 1:1 (Ctrl+1)',exact:true}).click();
       await t.page.waitForFunction(()=>new URL(document.querySelector('.editor-image').src).searchParams.get('variant')==='full');
       assert(t.imageRequests.some(r=>r.variant==='full'));
       report.checks.full_resolution_is_requested_only_for_one_to_one=true;
@@ -284,6 +304,8 @@ const deferred = () => { let resolve; const promise = new Promise(r => resolve =
       assert.equal(t.workflows[0].selection,'suggested');
       assert.equal(t.workflows[0].retouch_strength,.15);
       assert.equal(t.workflows[0].export_directory,null);
+      await t.page.locator('.job').filter({hasText:'В очереди'}).waitFor();
+      assert(!await t.page.getByText('Обработка завершена.',{exact:false}).count());
       report.checks.one_click_launches_whole_workflow=true;
       await t.context.close();
     }
@@ -323,6 +345,107 @@ const deferred = () => { let resolve; const promise = new Promise(r => resolve =
       assert(t.saves[0].body.recipe.crop.w<1 && t.saves[0].body.recipe.lock_crop);
       await t.page.screenshot({path:path.join(folder,'crop-editor.png')});
       report.checks.crop_edges_corners_move_ctrl_wheel_and_fit=true;
+      await t.context.close();
+    }
+    {
+      const t=await setup();
+      t.fixture.settings.onboarding_completed=false;
+      await t.page.reload();
+      const guide=t.page.getByRole('region',{name:'Первое знакомство с OpenPhoto'});
+      await guide.waitFor();
+      await t.page.screenshot({path:path.join(folder,'first-run.png')});
+      for(let i=0;i<3;i++) await guide.getByRole('button',{name:'Далее',exact:true}).click();
+      assert.match(await guide.innerText(),/повторным импортом/);
+      await guide.getByRole('button',{name:'Понятно',exact:true}).click();
+      await guide.waitFor({state:'hidden'});
+      assert.equal(t.fixture.settings.onboarding_completed,true);
+      await t.page.reload(); await t.page.locator('.photo-card').first().waitFor();
+      assert.equal(await guide.count(),0);
+      await t.page.getByRole('button',{name:'Удалить съёмку «Browser fixture»',exact:true}).click();
+      await t.page.getByRole('dialog').getByRole('button',{name:'Удалить съёмку',exact:true}).click();
+      await t.page.waitForFunction(()=>!document.querySelector('.shoot-row') && document.querySelector('.count-pill')?.textContent==='0');
+      await t.page.locator('.sidebar').getByRole('button',{name:'Удалённые',exact:true}).click();
+      await t.page.waitForFunction(()=>document.querySelector('.count-pill')?.textContent==='3');
+      await t.page.getByRole('button',{name:'Выделить '+t.fixture.details[t.a].name,exact:true}).click();
+      await t.page.getByRole('button',{name:'Вернуть в каталог',exact:true}).click();
+      await t.page.locator('.shoot-row').waitFor();
+      report.checks.onboarding_persists_and_shoot_removal_is_reversible=true;
+      await t.context.close();
+    }
+    {
+      const t=await setup(); await t.open(t.a);
+      await t.page.waitForFunction(()=>document.querySelectorAll('.histogram path').length===3);
+      const numeric=t.page.getByRole('textbox',{name:'Экспозиция: значение',exact:true});
+      await numeric.fill('1,25'); await numeric.press('Enter');
+      assert.equal(await t.slider.inputValue(),'1.25');
+      await numeric.fill('99'); await numeric.press('Enter');
+      assert.equal(await t.slider.inputValue(),'5');
+      await t.page.getByRole('button',{name:'Сбросить: Экспозиция',exact:true}).click();
+      assert.equal(await t.slider.inputValue(),'0');
+      const image=t.page.locator('.editor-image');
+      const initial=await image.boundingBox();
+      // Keyboard zoom remains scoped to the photo and does not alter browser scale.
+      await t.page.keyboard.press('Control+Equal'); await t.rendered();
+      assert((await image.boundingBox()).width>initial.width*1.2);
+      await t.page.keyboard.press('Control+Digit0'); await t.rendered();
+      assert(Math.abs((await image.boundingBox()).width-initial.width)<3);
+      await t.page.keyboard.press('Control+Digit1'); await t.rendered();
+      assert(Math.abs((await image.boundingBox()).width-t.fixture.details[t.a].width)<3,'1:1 must work even for a small image');
+      await t.page.keyboard.press('Control+Digit0');
+      for(let i=0;i<5;i++) await t.page.keyboard.press('Equal');
+      await t.rendered();
+      const view=t.page.locator('.image-viewport');
+      const box=await view.boundingBox();
+      const scroll=()=>view.evaluate(el=>({x:el.scrollLeft,y:el.scrollTop}));
+      const drag=async()=>{await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();await t.page.mouse.move(box.x+box.width/2-70,box.y+box.height/2-35,{steps:6});await t.page.mouse.up();await t.rendered();};
+      const before=await scroll();await drag();const after=await scroll();
+      assert(after.x>before.x+55 && after.y>before.y+25,'Dragging must pan the enlarged image');
+      await t.page.getByRole('button',{name:'Кадр',exact:true}).click();
+      await t.page.locator('.crop-overlay').waitFor();
+      const cropStyle=await t.page.locator('.crop-overlay').getAttribute('style');
+      const label=await t.page.locator('.view-label').innerText();
+      await t.page.keyboard.down('Space');await drag();await t.page.keyboard.up('Space');
+      assert.equal(await t.page.locator('.crop-overlay').getAttribute('style'),cropStyle,'Space+drag must not edit crop');
+      assert.equal(await t.page.locator('.view-label').innerText(),label,'Space drag must not toggle before/after');
+      assert(await t.page.getByRole('button',{name:'Применить изменения',exact:true}).isDisabled());
+      await t.page.getByRole('button',{name:'Цвет',exact:true}).click();
+      await t.page.keyboard.press('Control+Digit0');
+      await t.page.keyboard.press('KeyB');
+      await t.page.waitForFunction(()=>new URL(document.querySelector('.editor-image').src).searchParams.get('variant')==='base');
+      await t.page.keyboard.press('KeyB');
+      await t.page.screenshot({path:path.join(folder,'photo-controls.png')});
+      await t.page.setViewportSize({width:1024,height:768}); await t.rendered();
+      await t.page.screenshot({path:path.join(folder,'photo-controls-1024.png')});
+      report.checks.numeric_reset_histogram_zoom_pan_crop_safety_and_hotkeys=true;
+      await t.context.close();
+    }
+    {
+      const t=await setup(); await t.open(t.a); await t.rendered();
+      const job=(id)=>({id,kind:'workflow',state:'completed',photo_ids:[t.a],total:2,completed:2,updated:'2026-10-03T12:00:00',result:{prepared_count:1}});
+      t.fixture.details[t.a].revision=1;t.fixture.details[t.a].recipe.develop.exposure=.5;
+      await t.emitJobs([job('remote-1')]);
+      await t.page.waitForFunction(()=>document.querySelector('.adjustment-title [role=status]')?.textContent?.includes('v1'));
+      assert.equal(await t.slider.inputValue(),'0.5');
+      assert.equal(new URL(await t.page.locator('.editor-image').getAttribute('src'),session.url).searchParams.get('revision'),'1');
+      await t.slider.fill('1.25');
+      t.fixture.details[t.a].revision=2;t.fixture.details[t.a].recipe.develop.exposure=.75;
+      const response=t.page.waitForResponse(r=>new URL(r.url()).pathname===`/api/photos/${t.a}`);
+      await t.emitJobs([job('remote-2')]);await response;await t.rendered();
+      assert.equal(await t.slider.inputValue(),'1.25','Remote completion must retain an unsaved draft');
+      assert.equal(t.saves.length,0);
+      report.checks.workflow_refreshes_clean_preview_but_preserves_manual_draft=true;
+      await t.context.close();
+    }
+    {
+      const t=await setup();
+      const job={id:'other-shoot',kind:'workflow',state:'running',photo_ids:['other-photo'],total:2,completed:1,updated:'2026-10-03T12:00:00',result:{message:'Other shoot'}};
+      await t.emitJobs([job]);
+      assert(await t.page.getByRole('button',{name:'Обработать съёмку',exact:true}).isEnabled());
+      assert.equal(await t.page.locator('.workflow-status').count(),0);
+      await t.emitJobs([{...job,id:'this-shoot',photo_ids:[t.a]}]);
+      assert(await t.page.getByRole('button',{name:'Обработать съёмку',exact:true}).isDisabled());
+      assert.match(await t.page.locator('.workflow-status').innerText(),/1\/2/);
+      report.checks.workflow_progress_and_lock_follow_current_shoot=true;
       await t.context.close();
     }
     assert.deepEqual(report.errors,[]);
