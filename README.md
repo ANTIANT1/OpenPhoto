@@ -15,8 +15,8 @@ An open-source AI photo editor for organizing, culling, editing, and retouching 
 
 | Workflow | Features |
 |---|---|
-| Organize and cull | Import Sony ARW and JPEG, link RAW+JPEG pairs, compare frames, rate photos, and review AI selections |
-| Develop and edit | Reversible recipes, color from reference images, crop and rotation, before/after comparison, and batch adjustments |
+| Organize and cull | Import Sony ARW and JPEG, link RAW+JPEG pairs, compare and rate frames, review AI selections, and restore removed photos by re-importing |
+| Develop and edit | Reversible recipes, reference color, numeric adjustments and resets, a preview RGB histogram, crop, pan/zoom shortcuts, and batch adjustments |
 | Retouch portraits | Face and body skin masks, adjustable smoothing and color evenness, protected areas, and local corrections |
 | Process a shoot | Run analysis, selection, color, retouching, and previews as a resumable job; optionally export JPEG |
 | Export | JPEG sRGB, 16-bit TIFF, rating XMP, and OpenPhoto recipes |
@@ -25,7 +25,7 @@ Originals stay in place. Edits have a history, manual changes take priority, and
 
 ## Project status
 
-**0.2.4 is a source preview for Windows x64.** The desktop interface is currently in Russian. Sony ARW and JPEG are the tested primary workflow; other camera formats and operating systems are not supported targets yet.
+**0.2.5 is a source preview for Windows x64.** This update adds reversible shoot removal, re-import recovery, a first-run guide, photo navigation shortcuts, and clearer automatic-processing results. The desktop interface is currently in Russian. Sony ARW and JPEG are the tested primary workflow; other camera formats and operating systems are not supported targets yet.
 
 Automatic results need a photographer's review. Automatic crop application is off by default. PSD files can be used as flattened RGB references, not edited as layered documents. See [limitations](LIMITATIONS.md) and [validation](docs/VALIDATION.md).
 
