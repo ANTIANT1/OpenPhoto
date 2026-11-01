@@ -45,7 +45,7 @@ jobs:
         run: .venv/Scripts/python scripts/verify_editor_races.py .cache/browser
       - name: Save synthetic test reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-checks
           retention-days: 14
@@ -90,7 +90,7 @@ jobs:
         run: npm.cmd --prefix frontend audit --audit-level=low
       - name: Save redacted security reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: security-checks
           retention-days: 14
